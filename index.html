@@ -4,7 +4,6 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>GreenTrack Scheduler</title>
-  <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#16794b"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css">
@@ -14,8 +13,8 @@
   <style>
     body { background:#f7faf9; }
     header { margin-bottom:.5rem; }
-    .tabs { display:flex; gap:.5rem; flex-wrap:wrap; }
-    .tabs button[role="tab"] { border:1px solid #e6e8ef; background:#fff; }
+    .tabs { display:flex; gap:.5rem; flex-wrap:wrap; list-style:none; padding:0; }
+    .tabs button[role="tab"] { border:1px solid #e6e8ef; background:#fff; padding:.45rem .8rem; border-radius:8px; }
     .active { outline:2px solid #1f7a1f33; }
     #calendar { max-width:1100px; margin:0 auto; background:#fff; padding:8px; border-radius:12px; border:1px solid #e6e8ef; }
     #map { height:75vh; border-radius:12px; border:1px solid #e6e8ef; }
@@ -33,9 +32,7 @@
 <body>
 <header class="container">
   <nav>
-    <ul>
-      <li><strong>GreenTrack Scheduler</strong></li>
-    </ul>
+    <ul><li><strong>GreenTrack Scheduler</strong></li></ul>
     <ul class="tabs">
       <li><button role="tab" id="tab-dashboard" class="active">Dashboard</button></li>
       <li><button role="tab" id="tab-clients">Clients</button></li>
@@ -47,47 +44,35 @@
 </header>
 
 <main class="container">
-
   <!-- Dashboard -->
   <section id="panel-dashboard">
     <div class="grid2">
       <article class="route-panel">
         <h4>Route Optimisation</h4>
         <div class="grid2">
-          <label>Vehicle/Employee
-            <input id="route-filter" placeholder="e.g., Ute-1 or John">
-          </label>
-          <label>Date
-            <input id="route-date" type="date">
-          </label>
+          <label>Vehicle/Employee <input id="route-filter" placeholder="e.g., Ute-1 or John"></label>
+          <label>Date <input id="route-date" type="date"></label>
         </div>
         <div class="grid2">
-          <label class="pill"><input type="checkbox" id="route-limit-day" checked> Only jobs scheduled on selected date</label>
+          <label class="pill"><input type="checkbox" id="route-limit-day" checked> Only jobs on selected date</label>
           <label class="pill"><input type="checkbox" id="route-start-first"> Keep first stop fixed</label>
         </div>
         <div class="grid2">
           <button id="btn-optimise">Optimise Route</button>
           <button id="btn-open-gmaps" class="secondary">Open in Google Maps</button>
         </div>
-        <small class="muted">Optimiser uses Nearest-Neighbor + 2-Opt (great for 5–60 stops). Distances use straight-line for ordering; navigation uses Google Maps when opened.</small>
+        <small class="muted">Uses Nearest-Neighbor + 2-Opt (straight-line for ordering). Google Maps handles live navigation.</small>
         <div id="route-list" style="margin-top:.75rem;"></div>
       </article>
 
       <article>
         <h4>Live Sheet Status</h4>
-        <p class="small">Source: Google Sheet <code>16NDTNp55TkBYDIW3SanO7nConSqHivRi6GwP2g3Nzs4</code></p>
+        <p class="small">Source: Google Sheet <code id="sheet-badge"></code></p>
         <div class="grid2">
-          <div>
-            <strong>Total clients</strong>
-            <p><span id="stat-total" class="badge">0</span></p>
-          </div>
-          <div>
-            <strong>With coordinates</strong>
-            <p><span id="stat-geo" class="badge">0</span></p>
-          </div>
+          <div><strong>Total clients</strong><p><span id="stat-total" class="badge">0</span></p></div>
+          <div><strong>With coordinates</strong><p><span id="stat-geo" class="badge">0</span></p></div>
         </div>
-        <details>
-          <summary>Last fetch log</summary>
+        <details><summary>Last fetch log</summary>
           <pre id="log" style="max-height:40vh; overflow:auto; background:#0b1021; color:#d2e0ff; padding:8px; border-radius:8px;"></pre>
         </details>
       </article>
@@ -99,9 +84,7 @@
     <h3>Clients <span class="badge" id="client-count">0</span></h3>
     <div class="grid2">
       <input id="filter" placeholder="Search by name, suburb, vehicle, employee, frequency…">
-      <div class="right">
-        <button id="btn-backup" class="secondary">Backup (JSON)</button>
-      </div>
+      <div class="right"><button id="btn-backup" class="secondary">Backup (JSON)</button></div>
     </div>
     <div style="overflow:auto; max-height:65vh; margin-top:.5rem;">
       <table id="client-table">
@@ -137,9 +120,7 @@
   <section id="panel-map" hidden>
     <div class="grid2">
       <h3>Map</h3>
-      <div class="right">
-        <label class="pill"><input type="checkbox" id="use-clusters" checked> Cluster pins</label>
-      </div>
+      <div class="right"><label class="pill"><input type="checkbox" id="use-clusters" checked> Cluster pins</label></div>
     </div>
     <div id="map"></div>
   </section>
@@ -150,21 +131,15 @@
     <article>
       <h4>Sheet</h4>
       <label>Google Sheet ID
-        <input id="sheet-id" value="16NDTNp55TkBYDIW3SanO7nConSqHivRi6GwP2g3Nzs4" placeholder="Paste your sheet id">
+        <input id="sheet-id" value="1-tWXKILRtkFj_ebX1k9DikSQu2CDKByiLp8tg1uQaVY" placeholder="Paste your sheet id">
       </label>
       <div class="grid2">
         <button id="btn-reload">Reload from Sheet</button>
         <button id="btn-save-id" class="secondary">Save as default</button>
       </div>
-      <small class="small">If you ever change sheets, paste the new ID and click “Save as default”.</small>
-    </article>
-    <article>
-      <h4>Geocoding</h4>
-      <label class="pill"><input type="checkbox" id="auto-geocode"> Auto geocode missing coordinates (Nominatim)</label>
-      <label>Country bias <input id="country-code" placeholder="AU"></label>
+      <small class="small">If you change sheets, paste the new ID and click “Save as default”.</small>
     </article>
   </section>
-
 </main>
 
 <!-- JS libs -->
@@ -182,9 +157,8 @@ function hav(a,b){const R=6371,toR=x=>x*Math.PI/180;const dLat=toR(b.lat-a.lat),
 
 // ---------- State ----------
 const LS_SHEET="gt_sheet_id";
-let SHEET_ID=localStorage.getItem(LS_SHEET) || "16NDTNp55TkBYDIW3SanO7nConSqHivRi6GwP2g3Nzs4";
-let clients=[];
-let cal,map,markerLayer,routeLine;
+let SHEET_ID=localStorage.getItem(LS_SHEET) || "1-tWXKILRtkFj_ebX1k9DikSQu2CDKByiLp8tg1uQaVY";
+let clients=[]; let cal,map,markerLayer,routeLine;
 
 // ---------- Tabs ----------
 const panels={"tab-dashboard":"panel-dashboard","tab-clients":"panel-clients","tab-calendar":"panel-calendar","tab-map":"panel-map","tab-settings":"panel-settings"};
@@ -197,7 +171,7 @@ Object.keys(panels).forEach(id=>{
   });
 });
 
-// ---------- Google Sheet fetch (Visualization API) ----------
+// ---------- Google Sheet fetch ----------
 async function fetchSheet(sheetId=SHEET_ID){
   const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
   log("Fetching sheet…");
@@ -207,54 +181,16 @@ async function fetchSheet(sheetId=SHEET_ID){
   const data=JSON.parse(jsonStr);
   const cols=data.table.cols.map(c=>c.label||c.id);
   const rows=data.table.rows.map(r=>{
-    const o={}; cols.forEach((h,i)=>o[h]=r.c[i]? (r.c[i].v ?? r.c[i].f ?? "") : "");
-    return o;
+    const o={}; cols.forEach((h,i)=>o[h]=r.c[i]? (r.c[i].v ?? r.c[i].f ?? "") : ""); return o;
   });
-  log(`Loaded ${rows.length} rows.`);
-  return {cols,rows};
+  log(`Loaded ${rows.length} rows.`); return {cols,rows};
 }
-
 function normalize(row){
-  const map={
-    name:["name","client","customer"],
-    address:["address","addr","street"],
-    phone:["phone","mobile","contact"],
-    email:["email","mail"],
-    frequency:["frequency","freq"],
-    vehicle:["vehicle","car","ute","van"],
-    employee:["employee","staff","worker","team"],
-    start:["start","start date","start_date"],
-    notes:["notes","job notes","description"],
-    lat:["lat","latitude"],
-    lng:["lng","lon","long","longitude"],
-  };
+  const map={name:["name","client","customer"],address:["address","addr","street"],phone:["phone","mobile","contact"],email:["email","mail"],frequency:["frequency","freq"],vehicle:["vehicle","car","ute","van"],employee:["employee","staff","worker","team"],start:["start","start date","start_date"],notes:["notes","job notes","description"],lat:["lat","latitude"],lng:["lng","lon","long","longitude"]};
   const get=(keys)=>{for(const k of keys){for(const key in row){if(key && key.toString().toLowerCase().trim()===k) return row[key];}} return "";}
-  const obj={
-    name:get(map.name),
-    address:get(map.address),
-    phone:get(map.phone),
-    email:get(map.email),
-    frequency:normFreq(get(map.frequency)),
-    vehicle:get(map.vehicle),
-    employee:get(map.employee),
-    start:iso(get(map.start)) || dayjs().format("YYYY-MM-DD"),
-    notes:get(map.notes),
-    lat:parseFloat(get(map.lat))||null,
-    lng:parseFloat(get(map.lng))||null,
-  };
-  return obj;
+  return {name:get(map.name),address:get(map.address),phone:get(map.phone),email:get(map.email),frequency:normFreq(get(map.frequency)),vehicle:get(map.vehicle),employee:get(map.employee),start:iso(get(map.start))||dayjs().format("YYYY-MM-DD"),notes:get(map.notes),lat:parseFloat(get(map.lat))||null,lng:parseFloat(get(map.lng))||null};
 }
-function normFreq(v){
-  if(!v) return "2w";
-  v=(""+v).toLowerCase();
-  if (v.includes("1")) return "1w";
-  if (v.includes("3")) return "3w";
-  if (v.includes("4")) return "4w";
-  if (v.includes("2")) return "2w";
-  if (v.includes("week")) return "1w";
-  if (v.includes("month")) return "4w";
-  return v;
-}
+function normFreq(v){ if(!v) return "2w"; v=(""+v).toLowerCase(); if(v.includes("1"))return"1w"; if(v.includes("3"))return"3w"; if(v.includes("4"))return"4w"; if(v.includes("2"))return"2w"; if(v.includes("week"))return"1w"; if(v.includes("month"))return"4w"; return v; }
 function iso(s){ if(!s) return ""; const d=dayjs(s); return d.isValid()? d.format("YYYY-MM-DD"):""; }
 
 // ---------- Load & render ----------
@@ -262,6 +198,7 @@ async function loadClients(){
   try{
     const {rows}=await fetchSheet();
     clients=rows.map(normalize).filter(c=>c.name||c.address);
+    $("sheet-badge").textContent = SHEET_ID;
     $("stat-total").textContent=clients.length;
     $("stat-geo").textContent=clients.filter(c=>c.lat&&c.lng).length;
     $("client-count").textContent=clients.length;
@@ -279,151 +216,89 @@ async function loadClients(){
 function renderClientTable(){
   const tb=document.querySelector("#client-table tbody"); tb.innerHTML="";
   const filter=($("filter").value||"").toLowerCase();
-  clients
-    .filter(c=>JSON.stringify(c).toLowerCase().includes(filter))
-    .forEach(c=>{
-      tb.appendChild(el("tr",{},[
-        el("td",{},[c.name||""]),
-        el("td",{},[c.address||""]),
-        el("td",{},[c.phone||""]),
-        el("td",{},[c.email||""]),
-        el("td",{},[c.frequency||""]),
-        el("td",{},[c.vehicle||""]),
-        el("td",{},[c.employee||""]),
-        el("td",{},[c.start||""]),
-        el("td",{},[c.notes||""]),
-        el("td",{},[c.lat??""]),
-        el("td",{},[c.lng??""]),
-      ]));
-    });
+  clients.filter(c=>JSON.stringify(c).toLowerCase().includes(filter)).forEach(c=>{
+    tb.appendChild(el("tr",{},[
+      el("td",{},[c.name||""]), el("td",{},[c.address||""]), el("td",{},[c.phone||""]), el("td",{},[c.email||""]),
+      el("td",{},[c.frequency||""]), el("td",{},[c.vehicle||""]), el("td",{},[c.employee||""]), el("td",{},[c.start||""]),
+      el("td",{},[c.notes||""]), el("td",{},[c.lat??""]), el("td",{},[c.lng??""])
+    ]));
+  });
 }
 $("filter").addEventListener("input", renderClientTable);
-$("btn-backup").addEventListener("click", ()=>{
-  const blob=new Blob([JSON.stringify({clients},null,2)],{type:"application/json"});
-  const a=el("a",{download:"greentrack_backup.json"}); a.href=URL.createObjectURL(blob); a.click();
-});
+$("btn-backup").addEventListener("click", ()=>{ const blob=new Blob([JSON.stringify({clients},null,2)],{type:"application/json"}); const a=el("a",{download:"greentrack_backup.json"}); a.href=URL.createObjectURL(blob); a.click(); });
 
 // ---------- Calendar ----------
 function genEvents(){
-  const showAssign=$("toggle-assign").checked;
-  const events=[];
-  const startWindow=dayjs().startOf('month').subtract(1,'month');
-  const endWindow=dayjs().endOf('month').add(2,'month');
-  clients.forEach((c,i)=>{
-    const freq=c.frequency||"2w";
-    const start=dayjs(c.start||dayjs().format("YYYY-MM-DD"));
-    if(!start.isValid()) return;
+  const showAssign=$("toggle-assign")?.checked;
+  const events=[]; const startWindow=dayjs().startOf('month').subtract(1,'month'); const endWindow=dayjs().endOf('month').add(2,'month');
+  clients.forEach((c,i)=>{ const freq=c.frequency||"2w"; const start=dayjs(c.start||dayjs().format("YYYY-MM-DD")); if(!start.isValid()) return;
     let step=2; if(freq.startsWith("1w")) step=1; else if(freq.startsWith("3w")) step=3; else if(freq.startsWith("4w")) step=4;
-    let d=start.startOf('day');
-    while(d.isBefore(endWindow)){
-      if(d.isAfter(startWindow)){
-        events.push({id:`${i}-${d.format("YYYYMMDD")}`, title: c.name+(showAssign? ` · ${c.employee||c.vehicle||""}`:""), start:d.format("YYYY-MM-DD"), extendedProps:{idx:i}});
-      }
-      d=d.add(step,'week');
-    }
-  });
-  return events;
+    let d=start.startOf('day'); while(d.isBefore(endWindow)){ if(d.isAfter(startWindow)){ events.push({id:`${i}-${d.format("YYYYMMDD")}`, title:c.name+(showAssign?` · ${c.employee||c.vehicle||""}`:""), start:d.format("YYYY-MM-DD"), extendedProps:{idx:i}});}
+      d=d.add(step,'week'); }
+  }); return events;
 }
 function renderCalendar(){
-  const target=$("calendar");
+  const target=$("calendar"); if(!target) return;
   if(!cal){
-    cal=new FullCalendar.Calendar(target,{
-      initialView:$("cal-view").value,
-      height:"auto",
-      editable:false,
+    cal=new FullCalendar.Calendar(target,{ initialView:$("cal-view").value, height:"auto", editable:false,
       headerToolbar:{left:"prev,next today",center:"title",right:"dayGridMonth,timeGridWeek,listWeek"},
       events:genEvents(),
-      eventClick:(info)=>{
-        const idx=info.event.extendedProps.idx; const c=clients[idx]; if(!c) return;
-        alert(`${c.name}\n${c.address||""}\n${c.phone||""}`);
-      }
-    });
-    cal.render();
-  }else{
-    cal.changeView($("cal-view").value);
-    cal.removeAllEvents(); cal.addEventSource(genEvents());
-  }
+      eventClick:(info)=>{ const idx=info.event.extendedProps.idx; const c=clients[idx]; if(!c) return; alert(`${c.name}\n${c.address||""}\n${c.phone||""}`); }
+    }); cal.render();
+  }else{ cal.changeView($("cal-view").value); cal.removeAllEvents(); cal.addEventSource(genEvents()); }
 }
 $("cal-view").addEventListener("change", renderCalendar);
 $("toggle-assign").addEventListener("change", renderCalendar);
 
 // ---------- Map ----------
 function renderMap(){
-  if(!map){
-    map=L.map("map").setView([-37.8136,144.9631],11); // Default: Melbourne; fit to markers later
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
-  }
+  const div=$("map"); if(!div) return;
+  if(!map){ map=L.map("map").setView([-37.8136,144.9631],11); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map); }
   if(markerLayer) markerLayer.remove();
   const useClusters=$("use-clusters").checked;
   markerLayer=useClusters? L.markerClusterGroup() : L.layerGroup();
   let bounds=[];
-  clients.forEach(c=>{
-    if(c.lat&&c.lng){
-      const m=L.marker([c.lat,c.lng]).bindPopup(`<strong>${c.name}</strong><br>${c.address||""}<br>${c.vehicle||""} ${c.employee? " · "+c.employee:""}`);
-      markerLayer.addLayer(m); bounds.push([c.lat,c.lng]);
-    }
-  });
-  markerLayer.addTo(map);
-  if(bounds.length) map.fitBounds(bounds,{padding:[20,20]});
+  clients.forEach(c=>{ if(c.lat&&c.lng){ const m=L.marker([c.lat,c.lng]).bindPopup(`<strong>${c.name}</strong><br>${c.address||""}<br>${c.vehicle||""} ${c.employee? " · "+c.employee:""}`); markerLayer.addLayer(m); bounds.push([c.lat,c.lng]); }});
+  markerLayer.addTo(map); if(bounds.length) map.fitBounds(bounds,{padding:[20,20]});
 }
 $("use-clusters").addEventListener("change", renderMap);
 
 // ---------- Route Optimisation ----------
 function todaysStops(dateStr, filterText, limitDay=true){
-  const date=dayjs(dateStr);
-  const occ=[];
+  const date=dayjs(dateStr), occ=[];
   clients.forEach(c=>{
     const start=dayjs(c.start||dayjs().format("YYYY-MM-DD")); if(!start.isValid()) return;
-    let step=14; const f=c.frequency||"2w";
-    if(f.startsWith("1w")) step=7; else if(f.startsWith("3w")) step=21; else if(f.startsWith("4w")) step=28;
+    let step=14; const f=c.frequency||"2w"; if(f.startsWith("1w")) step=7; else if(f.startsWith("3w")) step=21; else if(f.startsWith("4w")) step=28;
     if(!c.lat||!c.lng) return;
-    if(filterText){
-      const t=(c.vehicle+" "+c.employee).toLowerCase();
-      if(!t.includes(filterText.toLowerCase())) return;
-    }
-    if(limitDay){
-      const diff=date.diff(start,'day');
-      if(diff>=0 && diff%step===0) occ.push(c);
-    }else{
-      const diff=Math.abs(date.diff(start,'day'));
-      if(diff%step===0 || (diff%step)<7) occ.push(c);
-    }
-  });
-  return occ;
+    if(filterText){ const t=(c.vehicle+" "+c.employee).toLowerCase(); if(!t.includes(filterText.toLowerCase())) return; }
+    if(limitDay){ const diff=date.diff(start,'day'); if(diff>=0 && diff%step===0) occ.push(c); }
+    else { const diff=Math.abs(date.diff(start,'day')); if(diff%step===0 || (diff%step)<7) occ.push(c); }
+  }); return occ;
 }
 function nearestNeighbor(pts,startIndex=0){
   const n=pts.length; if(n<=2) return [...Array(n).keys()];
   const used=new Array(n).fill(false); let route=[startIndex]; used[startIndex]=true; let curr=startIndex;
-  for(let k=1;k<n;k++){ let best=-1,bd=1e18;
-    for(let i=0;i<n;i++) if(!used[i]){ const d=hav(pts[curr],pts[i]); if(d<bd){bd=d; best=i;}}
-    route.push(best); used[best]=true; curr=best;
-  }
+  for(let k=1;k<n;k++){ let best=-1,bd=1e18; for(let i=0;i<n;i++) if(!used[i]){ const d=hav(pts[curr],pts[i]); if(d<bd){bd=d; best=i;} } route.push(best); used[best]=true; curr=best; }
   return route;
 }
 function twoOpt(route, pts){
   function dist(a,b){return hav(pts[a],pts[b]);}
   let improved=true, L=route.length;
-  while(improved){
-    improved=false;
-    for(let i=1;i<L-2;i++){
-      for(let k=i+1;k<L-1;k++){
-        const a=route[i-1], b=route[i], c=route[k], d=route[k+1];
-        const delta=(dist(a,b)+dist(c,d))-(dist(a,c)+dist(b,d));
-        if(delta>1e-6){ const rev=route.slice(i,k+1).reverse(); route.splice(i,k+1-i,...rev); improved=true; }
-      }
-    }
-  }
+  while(improved){ improved=false;
+    for(let i=1;i<L-2;i++){ for(let k=i+1;k<L-1;k++){
+      const a=route[i-1], b=route[i], c=route[k], d=route[k+1];
+      const delta=(dist(a,b)+dist(c,d))-(dist(a,c)+dist(b,d));
+      if(delta>1e-6){ const rev=route.slice(i,k+1).reverse(); route.splice(i,k+1-i,...rev); improved=true; }
+    }} }
   return route;
 }
 function optimiseRoute(dateStr, filterText, keepStart){
   const stops=todaysStops(dateStr, filterText, $("route-limit-day").checked);
   if(!stops.length) return {order:[],stops:[]};
   const pts=stops.map(s=>({lat:s.lat,lng:s.lng}));
-  let routeIdx=nearestNeighbor(pts,0);
-  routeIdx=twoOpt(routeIdx,pts);
+  let routeIdx=nearestNeighbor(pts,0); routeIdx=twoOpt(routeIdx,pts);
   if(keepStart && routeIdx[0]!==0){ const i=routeIdx.indexOf(0); routeIdx=routeIdx.slice(i).concat(routeIdx.slice(0,i)); }
-  const ordered=routeIdx.map(i=>stops[i]);
-  return {order:ordered, stops};
+  const ordered=routeIdx.map(i=>stops[i]); return {order:ordered, stops};
 }
 $("btn-optimise").addEventListener("click", ()=>{
   const date=$("route-date").value || dayjs().format("YYYY-MM-DD");
@@ -431,14 +306,8 @@ $("btn-optimise").addEventListener("click", ()=>{
   const res=optimiseRoute(date,filt,$("route-start-first").checked);
   const box=$("route-list"); box.innerHTML="";
   if(!res.order.length){ box.textContent="No stops found for that filter/date."; if(routeLine&&map){map.removeLayer(routeLine); routeLine=null;} return; }
-  const ol=el("ol"); res.order.forEach(c=>ol.appendChild(el("li",{},[`${c.name} — ${c.address}`])));
-  box.appendChild(ol);
-  if(map){
-    const latlngs=res.order.map(c=>[c.lat,c.lng]);
-    if(routeLine) map.removeLayer(routeLine);
-    routeLine=L.polyline(latlngs,{weight:4}).addTo(map);
-    map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
-  }
+  const ol=el("ol"); res.order.forEach(c=>ol.appendChild(el("li",{},[`${c.name} — ${c.address}`]))); box.appendChild(ol);
+  if(map){ const latlngs=res.order.map(c=>[c.lat,c.lng]); if(routeLine) map.removeLayer(routeLine); routeLine=L.polyline(latlngs,{weight:4}).addTo(map); map.fitBounds(routeLine.getBounds(),{padding:[20,20]}); }
 });
 $("btn-open-gmaps").addEventListener("click", ()=>{
   const date=$("route-date").value || dayjs().format("YYYY-MM-DD");
@@ -446,11 +315,8 @@ $("btn-open-gmaps").addEventListener("click", ()=>{
   const res=optimiseRoute(date,filt,$("route-start-first").checked);
   if(!res.order.length) return alert("No stops to open.");
   const parts=res.order.map(c=>encodeURIComponent(`${c.lat},${c.lng}`));
-  const origin=parts.shift();
-  const dest=parts.pop() || origin;
-  const waypoints=parts.length? "&waypoints="+parts.join("|") : "";
-  const url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${waypoints}`;
-  window.open(url,"_blank");
+  const origin=parts.shift(); const dest=parts.pop() || origin; const waypoints=parts.length? "&waypoints="+parts.join("|") : "";
+  const url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${waypoints}`; window.open(url,"_blank");
 });
 
 // ---------- Settings ----------
@@ -458,22 +324,19 @@ $("sheet-id").addEventListener("input", e=>SHEET_ID=e.target.value.trim());
 $("btn-save-id").addEventListener("click", ()=>{ localStorage.setItem(LS_SHEET,SHEET_ID); alert("Saved."); });
 $("btn-reload").addEventListener("click", loadClients);
 
-// ---------- PWA ----------
-if("serviceWorker" in navigator){ navigator.serviceWorker.register("./sw.js"); }
-
 // ---------- Init ----------
 document.addEventListener("DOMContentLoaded", ()=>{
   $("route-date").value = dayjs().format("YYYY-MM-DD");
-  // make the currently selected tab visible
-  $("tab-dashboard").click();
-  // ensure input shows the active SHEET_ID (from localStorage or default)
+  $("sheet-badge").textContent = SHEET_ID;
   $("sheet-id").value = SHEET_ID;
+  $("tab-dashboard").click();
   loadClients();
 });
 </script>
-  <footer class="container" style="margin-top:16px;opacity:.7;font-size:.9rem;">
-  Build: 2025-08-17-gt4
-</footer>
 
+<footer class="container" style="margin-top:16px;opacity:.7;font-size:.9rem;">
+  Build: baseline1
+</footer>
 </body>
 </html>
+
