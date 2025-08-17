@@ -1,131 +1,475 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>GreenTrack Scheduler</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#16794b"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-    }
-    nav {
-      background: #2a9d8f;
-      color: white;
-      padding: 12px;
-      display: flex;
-      gap: 20px;
-    }
-    nav a {
-      color: white;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    nav a:hover {
-      text-decoration: underline;
-    }
-    .container {
-      padding: 20px;
-    }
-    h1 {
-      color: #264653;
-    }
-    .card {
-      background: white;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    label {
-      font-weight: bold;
-    }
-    input, textarea, select {
-      width: 100%;
-      padding: 8px;
-      margin: 5px 0 15px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button {
-      background: #2a9d8f;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #21867a;
-    }
+    body { background:#f7faf9; }
+    header { margin-bottom:.5rem; }
+    .tabs { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .tabs button[role="tab"] { border:1px solid #e6e8ef; background:#fff; }
+    .active { outline:2px solid #1f7a1f33; }
+    #calendar { max-width:1100px; margin:0 auto; background:#fff; padding:8px; border-radius:12px; border:1px solid #e6e8ef; }
+    #map { height:75vh; border-radius:12px; border:1px solid #e6e8ef; }
+    table { background:#fff; border-radius:12px; }
+    .small { font-size:.9rem; color:#667085; }
+    .right { text-align:right; }
+    .pill { border:1px solid #e6e8ef; border-radius:10px; padding:.35rem .6rem; background:#fff; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .badge { background:#eaf6ea; color:#1f7a1f; padding:.2rem .5rem; border-radius:999px; font-weight:700; font-size:.8rem; }
+    .route-panel { background:#fff; border:1px solid #e6e8ef; border-radius:12px; padding:12px; }
+    .nowrap { white-space:nowrap; }
+    .muted { color:#8a94a6; }
   </style>
 </head>
 <body>
+<header class="container">
   <nav>
-    <a href="#dashboard">Dashboard</a>
-    <a href="#clients">Clients</a>
-    <a href="#calendar">Calendar</a>
-    <a href="#map">Map</a>
-    <a href="#settings">Settings</a>
+    <ul>
+      <li><strong>GreenTrack Scheduler</strong></li>
+    </ul>
+    <ul class="tabs">
+      <li><button role="tab" id="tab-dashboard" class="active">Dashboard</button></li>
+      <li><button role="tab" id="tab-clients">Clients</button></li>
+      <li><button role="tab" id="tab-calendar">Calendar</button></li>
+      <li><button role="tab" id="tab-map">Map</button></li>
+      <li><button role="tab" id="tab-settings">Settings</button></li>
+    </ul>
   </nav>
-  <div class="container">
-    <section id="dashboard" class="card">
-      <h1>Dashboard</h1>
-      <p>Welcome to GreenTrack Scheduler. Use the navigation bar to manage clients, calendar, routes, and settings.</p>
-    </section>
+</header>
 
-    <section id="clients" class="card">
-      <h1>Clients</h1>
-      <div id="clients-list">Loading clients...</div>
-    </section>
+<main class="container">
 
-    <section id="calendar" class="card">
-      <h1>Calendar</h1>
-      <div id="calendar-list">Loading calendar...</div>
-    </section>
+  <!-- Dashboard -->
+  <section id="panel-dashboard">
+    <div class="grid2">
+      <article class="route-panel">
+        <h4>Route Optimisation</h4>
+        <div class="grid2">
+          <label>Vehicle/Employee
+            <input id="route-filter" placeholder="e.g., Ute-1 or John">
+          </label>
+          <label>Date
+            <input id="route-date" type="date">
+          </label>
+        </div>
+        <div class="grid2">
+          <label class="pill"><input type="checkbox" id="route-limit-day" checked> Only jobs scheduled on selected date</label>
+          <label class="pill"><input type="checkbox" id="route-start-first"> Keep first stop fixed</label>
+        </div>
+        <div class="grid2">
+          <button id="btn-optimise">Optimise Route</button>
+          <button id="btn-open-gmaps" class="secondary">Open in Google Maps</button>
+        </div>
+        <small class="muted">Optimiser uses Nearest-Neighbor + 2-Opt (great for 5–60 stops). Distances use straight-line for ordering; navigation uses Google Maps when opened.</small>
+        <div id="route-list" style="margin-top:.75rem;"></div>
+      </article>
 
-    <section id="map" class="card">
-      <h1>Map</h1>
-      <div id="map-view">Map placeholder</div>
-    </section>
+      <article>
+        <h4>Live Sheet Status</h4>
+        <p class="small">Source: Google Sheet <code>1-tWXKILRtkFj_ebX1k9DikSQu2CDKByiLp8tg1uQaVY</code></p>
+        <div class="grid2">
+          <div>
+            <strong>Total clients</strong>
+            <p><span id="stat-total" class="badge">0</span></p>
+          </div>
+          <div>
+            <strong>With coordinates</strong>
+            <p><span id="stat-geo" class="badge">0</span></p>
+          </div>
+        </div>
+        <details>
+          <summary>Last fetch log</summary>
+          <pre id="log" style="max-height:40vh; overflow:auto; background:#0b1021; color:#d2e0ff; padding:8px; border-radius:8px;"></pre>
+        </details>
+      </article>
+    </div>
+  </section>
 
-    <section id="settings" class="card">
-      <h1>Settings</h1>
-      <label for="sheetId">Google Sheet ID:</label>
-      <input type="text" id="sheetId" placeholder="Enter your Google Sheet ID" />
-      <button onclick="saveSettings()">Save as Default</button>
-      <button onclick="reloadSheet()">Reload from Sheet</button>
-      <p id="status">Live Sheet Status: Not connected</p>
-    </section>
-  </div>
+  <!-- Clients -->
+  <section id="panel-clients" hidden>
+    <h3>Clients <span class="badge" id="client-count">0</span></h3>
+    <div class="grid2">
+      <input id="filter" placeholder="Search by name, suburb, vehicle, employee, frequency…">
+      <div class="right">
+        <button id="btn-backup" class="secondary">Backup (JSON)</button>
+      </div>
+    </div>
+    <div style="overflow:auto; max-height:65vh; margin-top:.5rem;">
+      <table id="client-table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Address</th><th>Phone</th><th>Email</th>
+            <th>Frequency</th><th>Vehicle</th><th>Employee</th>
+            <th>Start Date</th><th>Notes</th><th class="nowrap">Lat</th><th class="nowrap">Lng</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
 
-  <script>
-    function saveSettings() {
-      const id = document.getElementById('sheetId').value;
-      localStorage.setItem('sheetId', id);
-      document.getElementById('status').innerText = "Saved Sheet ID: " + id;
-    }
+  <!-- Calendar -->
+  <section id="panel-calendar" hidden>
+    <div class="grid2">
+      <h3>Calendar</h3>
+      <div class="right">
+        <label class="pill"><input type="checkbox" id="toggle-assign" checked> Show employee/vehicle</label>
+        <label>View <select id="cal-view">
+          <option value="dayGridMonth">Month</option>
+          <option value="timeGridWeek">Week</option>
+          <option value="listWeek">List (Week)</option>
+        </select></label>
+      </div>
+    </div>
+    <div id="calendar"></div>
+  </section>
 
-    function reloadSheet() {
-      const id = localStorage.getItem('sheetId');
-      if (!id) {
-        alert("Please save a Sheet ID first");
-        return;
+  <!-- Map -->
+  <section id="panel-map" hidden>
+    <div class="grid2">
+      <h3>Map</h3>
+      <div class="right">
+        <label class="pill"><input type="checkbox" id="use-clusters" checked> Cluster pins</label>
+      </div>
+    </div>
+    <div id="map"></div>
+  </section>
+
+  <!-- Settings -->
+  <section id="panel-settings" hidden>
+    <h3>Settings</h3>
+    <article>
+      <h4>Sheet</h4>
+      <label>Google Sheet ID
+        <input id="sheet-id" value="1-tWXKILRtkFj_ebX1k9DikSQu2CDKByiLp8tg1uQaVY" placeholder="Paste your sheet id">
+      </label>
+      <div class="grid2">
+        <button id="btn-reload">Reload from Sheet</button>
+        <button id="btn-save-id" class="secondary">Save as default</button>
+      </div>
+      <small class="small">If you ever change sheets, paste the new ID and click “Save as default”.</small>
+    </article>
+    <article>
+      <h4>Geocoding</h4>
+      <label class="pill"><input type="checkbox" id="auto-geocode"> Auto geocode missing coordinates (Nominatim)</label>
+      <label>Country bias <input id="country-code" placeholder="AU"></label>
+    </article>
+  </section>
+
+</main>
+
+<!-- JS libs -->
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+// ---------- Helpers ----------
+function $(id){return document.getElementById(id);}
+function el(t,a={},kids=[]){const e=document.createElement(t);Object.entries(a).forEach(([k,v])=>k==='class'?e.className=v:e.setAttribute(k,v));kids.forEach(c=>e.appendChild(typeof c==='string'?document.createTextNode(c):c));return e;}
+function log(m){const L=$("log"); if(L) L.textContent+=(dayjs().format("HH:mm:ss")+"  "+m+"\\n");}
+function hav(a,b){const R=6371,toR=x=>x*Math.PI/180;const dLat=toR(b.lat-a.lat),dLng=toR(b.lng-a.lng);const s=Math.sin(dLat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(s));}
+
+// ---------- State ----------
+const LS_SHEET="gt_sheet_id";
+let SHEET_ID=localStorage.getItem(LS_SHEET) || "1-tWXKILRtkFj_ebX1k9DikSQu2CDKByiLp8tg1uQaVY";
+let clients=[];
+let cal,map,markerLayer,routeLine;
+
+// ---------- Tabs ----------
+const panels={"tab-dashboard":"panel-dashboard","tab-clients":"panel-clients","tab-calendar":"panel-calendar","tab-map":"panel-map","tab-settings":"panel-settings"};
+Object.keys(panels).forEach(id=>{
+  $(id).addEventListener("click",()=>{
+    Object.keys(panels).forEach(k=>{$(k).classList.toggle("active",k===id); $(panels[k]).hidden=(k!==id);});
+    if(id==="tab-calendar") setTimeout(renderCalendar,60);
+    if(id==="tab-map") setTimeout(renderMap,60);
+    if(id==="tab-clients") renderClientTable();
+  });
+});
+
+// ---------- Google Sheet fetch (Visualization API) ----------
+async function fetchSheet(sheetId=SHEET_ID){
+  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+  log("Fetching sheet…");
+  const res=await fetch(url);
+  const txt=await res.text();
+  const jsonStr=txt.substring(txt.indexOf('{'), txt.lastIndexOf('}')+1);
+  const data=JSON.parse(jsonStr);
+  const cols=data.table.cols.map(c=>c.label||c.id);
+  const rows=data.table.rows.map(r=>{
+    const o={}; cols.forEach((h,i)=>o[h]=r.c[i]? (r.c[i].v ?? r.c[i].f ?? "") : "");
+    return o;
+  });
+  log(`Loaded ${rows.length} rows.`);
+  return {cols,rows};
+}
+
+function normalize(row){
+  const map={
+    name:["name","client","customer"],
+    address:["address","addr","street"],
+    phone:["phone","mobile","contact"],
+    email:["email","mail"],
+    frequency:["frequency","freq"],
+    vehicle:["vehicle","car","ute","van"],
+    employee:["employee","staff","worker","team"],
+    start:["start","start date","start_date"],
+    notes:["notes","job notes","description"],
+    lat:["lat","latitude"],
+    lng:["lng","lon","long","longitude"],
+  };
+  const get=(keys)=>{for(const k of keys){for(const key in row){if(key && key.toString().toLowerCase().trim()===k) return row[key];}} return "";}
+  const obj={
+    name:get(map.name),
+    address:get(map.address),
+    phone:get(map.phone),
+    email:get(map.email),
+    frequency:normFreq(get(map.frequency)),
+    vehicle:get(map.vehicle),
+    employee:get(map.employee),
+    start:iso(get(map.start)) || dayjs().format("YYYY-MM-DD"),
+    notes:get(map.notes),
+    lat:parseFloat(get(map.lat))||null,
+    lng:parseFloat(get(map.lng))||null,
+  };
+  return obj;
+}
+function normFreq(v){
+  if(!v) return "2w";
+  v=(""+v).toLowerCase();
+  if (v.includes("1")) return "1w";
+  if (v.includes("3")) return "3w";
+  if (v.includes("4")) return "4w";
+  if (v.includes("2")) return "2w";
+  if (v.includes("week")) return "1w";
+  if (v.includes("month")) return "4w";
+  return v;
+}
+function iso(s){ if(!s) return ""; const d=dayjs(s); return d.isValid()? d.format("YYYY-MM-DD"):""; }
+
+// ---------- Load & render ----------
+async function loadClients(){
+  try{
+    const {rows}=await fetchSheet();
+    clients=rows.map(normalize).filter(c=>c.name||c.address);
+    $("stat-total").textContent=clients.length;
+    $("stat-geo").textContent=clients.filter(c=>c.lat&&c.lng).length;
+    $("client-count").textContent=clients.length;
+    renderClientTable();
+    if(cal){cal.removeAllEvents(); cal.addEventSource(genEvents());}
+    if(map) renderMap();
+    log("Clients ready.");
+  }catch(e){
+    log("Error: "+e.message);
+    alert("Could not load Google Sheet. Ensure sharing is 'Anyone with the link can view'.");
+  }
+}
+
+// ---------- Clients table ----------
+function renderClientTable(){
+  const tb=document.querySelector("#client-table tbody"); tb.innerHTML="";
+  const filter=($("filter").value||"").toLowerCase();
+  clients
+    .filter(c=>JSON.stringify(c).toLowerCase().includes(filter))
+    .forEach(c=>{
+      tb.appendChild(el("tr",{},[
+        el("td",{},[c.name||""]),
+        el("td",{},[c.address||""]),
+        el("td",{},[c.phone||""]),
+        el("td",{},[c.email||""]),
+        el("td",{},[c.frequency||""]),
+        el("td",{},[c.vehicle||""]),
+        el("td",{},[c.employee||""]),
+        el("td",{},[c.start||""]),
+        el("td",{},[c.notes||""]),
+        el("td",{},[c.lat??""]),
+        el("td",{},[c.lng??""]),
+      ]));
+    });
+}
+$("filter").addEventListener("input", renderClientTable);
+$("btn-backup").addEventListener("click", ()=>{
+  const blob=new Blob([JSON.stringify({clients},null,2)],{type:"application/json"});
+  const a=el("a",{download:"greentrack_backup.json"}); a.href=URL.createObjectURL(blob); a.click();
+});
+
+// ---------- Calendar ----------
+function genEvents(){
+  const showAssign=$("toggle-assign").checked;
+  const events=[];
+  const startWindow=dayjs().startOf('month').subtract(1,'month');
+  const endWindow=dayjs().endOf('month').add(2,'month');
+  clients.forEach((c,i)=>{
+    const freq=c.frequency||"2w";
+    const start=dayjs(c.start||dayjs().format("YYYY-MM-DD"));
+    if(!start.isValid()) return;
+    let step=2; if(freq.startsWith("1w")) step=1; else if(freq.startsWith("3w")) step=3; else if(freq.startsWith("4w")) step=4;
+    let d=start.startOf('day');
+    while(d.isBefore(endWindow)){
+      if(d.isAfter(startWindow)){
+        events.push({id:`${i}-${d.format("YYYYMMDD")}`, title: c.name+(showAssign? ` · ${c.employee||c.vehicle||""}`:""), start:d.format("YYYY-MM-DD"), extendedProps:{idx:i}});
       }
-      document.getElementById('status').innerText = "Reloading from Sheet ID: " + id;
-      // Dummy placeholders (real app would fetch from Google Sheets)
-      document.getElementById('clients-list').innerHTML = "<ul><li>Jane Smith - Montrose</li><li>Andrew Lee - Chigwell</li></ul>";
-      document.getElementById('calendar-list').innerHTML = "<ul><li>18 Aug - Jane Smith - Mow & Edge</li><li>19 Aug - Andrew Lee - Full tidy</li></ul>";
+      d=d.add(step,'week');
     }
+  });
+  return events;
+}
+function renderCalendar(){
+  const target=$("calendar");
+  if(!cal){
+    cal=new FullCalendar.Calendar(target,{
+      initialView:$("cal-view").value,
+      height:"auto",
+      editable:false,
+      headerToolbar:{left:"prev,next today",center:"title",right:"dayGridMonth,timeGridWeek,listWeek"},
+      events:genEvents(),
+      eventClick:(info)=>{
+        const idx=info.event.extendedProps.idx; const c=clients[idx]; if(!c) return;
+        alert(`${c.name}\n${c.address||""}\n${c.phone||""}`);
+      }
+    });
+    cal.render();
+  }else{
+    cal.changeView($("cal-view").value);
+    cal.removeAllEvents(); cal.addEventSource(genEvents());
+  }
+}
+$("cal-view").addEventListener("change", renderCalendar);
+$("toggle-assign").addEventListener("change", renderCalendar);
 
-    window.onload = function() {
-      const savedId = localStorage.getItem('sheetId');
-      if (savedId) {
-        document.getElementById('sheetId').value = savedId;
-        document.getElementById('status').innerText = "Loaded saved Sheet ID: " + savedId;
+// ---------- Map ----------
+function renderMap(){
+  if(!map){
+    map=L.map("map").setView([-37.8136,144.9631],11); // Default: Melbourne; fit to markers later
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+  }
+  if(markerLayer) markerLayer.remove();
+  const useClusters=$("use-clusters").checked;
+  markerLayer=useClusters? L.markerClusterGroup() : L.layerGroup();
+  let bounds=[];
+  clients.forEach(c=>{
+    if(c.lat&&c.lng){
+      const m=L.marker([c.lat,c.lng]).bindPopup(`<strong>${c.name}</strong><br>${c.address||""}<br>${c.vehicle||""} ${c.employee? " · "+c.employee:""}`);
+      markerLayer.addLayer(m); bounds.push([c.lat,c.lng]);
+    }
+  });
+  markerLayer.addTo(map);
+  if(bounds.length) map.fitBounds(bounds,{padding:[20,20]});
+}
+$("use-clusters").addEventListener("change", renderMap);
+
+// ---------- Route Optimisation ----------
+function todaysStops(dateStr, filterText, limitDay=true){
+  const date=dayjs(dateStr);
+  const occ=[];
+  clients.forEach(c=>{
+    const start=dayjs(c.start||dayjs().format("YYYY-MM-DD")); if(!start.isValid()) return;
+    let step=14; const f=c.frequency||"2w";
+    if(f.startsWith("1w")) step=7; else if(f.startsWith("3w")) step=21; else if(f.startsWith("4w")) step=28;
+    if(!c.lat||!c.lng) return;
+    if(filterText){
+      const t=(c.vehicle+" "+c.employee).toLowerCase();
+      if(!t.includes(filterText.toLowerCase())) return;
+    }
+    if(limitDay){
+      const diff=date.diff(start,'day');
+      if(diff>=0 && diff%step===0) occ.push(c);
+    }else{
+      const diff=Math.abs(date.diff(start,'day'));
+      if(diff%step===0 || (diff%step)<7) occ.push(c);
+    }
+  });
+  return occ;
+}
+function nearestNeighbor(pts,startIndex=0){
+  const n=pts.length; if(n<=2) return [...Array(n).keys()];
+  const used=new Array(n).fill(false); let route=[startIndex]; used[startIndex]=true; let curr=startIndex;
+  for(let k=1;k<n;k++){ let best=-1,bd=1e18;
+    for(let i=0;i<n;i++) if(!used[i]){ const d=hav(pts[curr],pts[i]); if(d<bd){bd=d; best=i;}}
+    route.push(best); used[best]=true; curr=best;
+  }
+  return route;
+}
+function twoOpt(route, pts){
+  function dist(a,b){return hav(pts[a],pts[b]);}
+  let improved=true, L=route.length;
+  while(improved){
+    improved=false;
+    for(let i=1;i<L-2;i++){
+      for(let k=i+1;k<L-1;k++){
+        const a=route[i-1], b=route[i], c=route[k], d=route[k+1];
+        const delta=(dist(a,b)+dist(c,d))-(dist(a,c)+dist(b,d));
+        if(delta>1e-6){ const rev=route.slice(i,k+1).reverse(); route.splice(i,k+1-i,...rev); improved=true; }
       }
     }
-  </script>
+  }
+  return route;
+}
+function optimiseRoute(dateStr, filterText, keepStart){
+  const stops=todaysStops(dateStr, filterText, $("route-limit-day").checked);
+  if(!stops.length) return {order:[],stops:[]};
+  const pts=stops.map(s=>({lat:s.lat,lng:s.lng}));
+  let routeIdx=nearestNeighbor(pts,0);
+  routeIdx=twoOpt(routeIdx,pts);
+  if(keepStart && routeIdx[0]!==0){ const i=routeIdx.indexOf(0); routeIdx=routeIdx.slice(i).concat(routeIdx.slice(0,i)); }
+  const ordered=routeIdx.map(i=>stops[i]);
+  return {order:ordered, stops};
+}
+$("btn-optimise").addEventListener("click", ()=>{
+  const date=$("route-date").value || dayjs().format("YYYY-MM-DD");
+  const filt=$("route-filter").value.trim();
+  const res=optimiseRoute(date,filt,$("route-start-first").checked);
+  const box=$("route-list"); box.innerHTML="";
+  if(!res.order.length){ box.textContent="No stops found for that filter/date."; if(routeLine&&map){map.removeLayer(routeLine); routeLine=null;} return; }
+  const ol=el("ol"); res.order.forEach(c=>ol.appendChild(el("li",{},[`${c.name} — ${c.address}`])));
+  box.appendChild(ol);
+  if(map){
+    const latlngs=res.order.map(c=>[c.lat,c.lng]);
+    if(routeLine) map.removeLayer(routeLine);
+    routeLine=L.polyline(latlngs,{weight:4}).addTo(map);
+    map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
+  }
+});
+$("btn-open-gmaps").addEventListener("click", ()=>{
+  const date=$("route-date").value || dayjs().format("YYYY-MM-DD");
+  const filt=$("route-filter").value.trim();
+  const res=optimiseRoute(date,filt,$("route-start-first").checked);
+  if(!res.order.length) return alert("No stops to open.");
+  const parts=res.order.map(c=>encodeURIComponent(`${c.lat},${c.lng}`));
+  const origin=parts.shift();
+  const dest=parts.pop() || origin;
+  const waypoints=parts.length? "&waypoints="+parts.join("|") : "";
+  const url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${waypoints}`;
+  window.open(url,"_blank");
+});
+
+// ---------- Settings ----------
+$("sheet-id").addEventListener("input", e=>SHEET_ID=e.target.value.trim());
+$("btn-save-id").addEventListener("click", ()=>{ localStorage.setItem(LS_SHEET,SHEET_ID); alert("Saved."); });
+$("btn-reload").addEventListener("click", loadClients);
+
+// ---------- PWA ----------
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("./sw.js"); }
+
+// ---------- Init ----------
+document.addEventListener("DOMContentLoaded", ()=>{
+  $("route-date").value = dayjs().format("YYYY-MM-DD");
+  // make the currently selected tab visible
+  $("tab-dashboard").click();
+  // ensure input shows the active SHEET_ID (from localStorage or default)
+  $("sheet-id").value = SHEET_ID;
+  loadClients();
+});
+</script>
 </body>
 </html>
