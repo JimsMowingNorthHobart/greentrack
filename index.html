@@ -392,4 +392,84 @@ function todaysStops(dateStr, filterText, limitDay=true){
   return occ;
 }
 function nearestNeighbor(pts,startIndex=0){
-  const n=pts.length; i
+  const n=pts.length; if(n<=2) return [...Array(n).keys()];
+  const used=new Array(n).fill(false); let route=[startIndex]; used[startIndex]=true; let curr=startIndex;
+  for(let k=1;k<n;k++){ let best=-1,bd=1e18;
+    for(let i=0;i<n;i++) if(!used[i]){ const d=hav(pts[curr],pts[i]); if(d<bd){bd=d; best=i;}}
+    route.push(best); used[best]=true; curr=best;
+  }
+  return route;
+}
+function twoOpt(route, pts){
+  function dist(a,b){return hav(pts[a],pts[b]);}
+  let improved=true, L=route.length;
+  while(improved){
+    improved=false;
+    for(let i=1;i<L-2;i++){
+      for(let k=i+1;k<L-1;k++){
+        const a=route[i-1], b=route[i], c=route[k], d=route[k+1];
+        const delta=(dist(a,b)+dist(c,d))-(dist(a,c)+dist(b,d));
+        if(delta>1e-6){ const rev=route.slice(i,k+1).reverse(); route.splice(i,k+1-i,...rev); improved=true; }
+      }
+    }
+  }
+  return route;
+}
+function optimiseRoute(dateStr, filterText, keepStart){
+  const stops=todaysStops(dateStr, filterText, $("route-limit-day").checked);
+  if(!stops.length) return {order:[],stops:[]};
+  const pts=stops.map(s=>({lat:s.lat,lng:s.lng}));
+  let routeIdx=nearestNeighbor(pts,0);
+  routeIdx=twoOpt(routeIdx,pts);
+  if(keepStart && routeIdx[0]!==0){ const i=routeIdx.indexOf(0); routeIdx=routeIdx.slice(i).concat(routeIdx.slice(0,i)); }
+  const ordered=routeIdx.map(i=>stops[i]);
+  return {order:ordered, stops};
+}
+$("btn-optimise").addEventListener("click", ()=>{
+  const date=$("route-date").value || dayjs().format("YYYY-MM-DD");
+  const filt=$("route-filter").value.trim();
+  const res=optimiseRoute(date,filt,$("route-start-first").checked);
+  const box=$("route-list"); box.innerHTML="";
+  if(!res.order.length){ box.textContent="No stops found for that filter/date."; if(routeLine&&map){map.removeLayer(routeLine); routeLine=null;} return; }
+  const ol=el("ol"); res.order.forEach(c=>ol.appendChild(el("li",{},[`${c.name} — ${c.address}`])));
+  box.appendChild(ol);
+  if(map){
+    const latlngs=res.order.map(c=>[c.lat,c.lng]);
+    if(routeLine) map.removeLayer(routeLine);
+    routeLine=L.polyline(latlngs,{weight:4}).addTo(map);
+    map.fitBounds(routeLine.getBounds(),{padding:[20,20]});
+  }
+});
+$("btn-open-gmaps").addEventListener("click", ()=>{
+  const date=$("route-date").value || dayjs().format("YYYY-MM-DD");
+  const filt=$("route-filter").value.trim();
+  const res=optimiseRoute(date,filt,$("route-start-first").checked);
+  if(!res.order.length) return alert("No stops to open.");
+  const parts=res.order.map(c=>encodeURIComponent(`${c.lat},${c.lng}`));
+  const origin=parts.shift();
+  const dest=parts.pop() || origin;
+  const waypoints=parts.length? "&waypoints="+parts.join("|") : "";
+  const url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${waypoints}`;
+  window.open(url,"_blank");
+});
+
+// ---------- Settings ----------
+$("sheet-id").addEventListener("input", e=>SHEET_ID=e.target.value.trim());
+$("btn-save-id").addEventListener("click", ()=>{ localStorage.setItem(LS_SHEET,SHEET_ID); alert("Saved."); });
+$("btn-reload").addEventListener("click", loadClients);
+
+// ---------- PWA ----------
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("./sw.js"); }
+
+// ---------- Init ----------
+document.addEventListener("DOMContentLoaded", ()=>{
+  $("route-date").value = dayjs().format("YYYY-MM-DD");
+  // make the currently selected tab visible
+  $("tab-dashboard").click();
+  // ensure input shows the active SHEET_ID (from localStorage or default)
+  $("sheet-id").value = SHEET_ID;
+  loadClients();
+});
+</script>
+</body>
+</html>
