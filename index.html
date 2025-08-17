@@ -43,6 +43,52 @@
     .route-panel { background:#fff; border:1px solid #e6e8ef; border-radius:12px; padding:12px; }
     .nowrap { white-space:nowrap; }
     .muted { color:#8a94a6; }
+
+    /* === Brand colors & tabs (overrides) === */
+:root {
+  --brand-green: #16794b;
+  --brand-green-weak: #e3f2ea;
+}
+
+/* Force tab labels to be black by default */
+.tabs button[role="tab"] {
+  color: #000 !important;
+  background: #fff !important;
+  font-weight: 600;
+  border: 1px solid #d6d9e0 !important;
+  transition: background .15s ease, color .15s ease, border-color .15s ease, transform .05s ease;
+}
+
+/* Hover/press feedback */
+.tabs button[role="tab"]:hover { transform: translateY(-1px); }
+.tabs button[role="tab"]:active { transform: translateY(0); }
+
+/* Active tab: green background, white text, bold border */
+.tabs button[role="tab"].active {
+  background: var(--brand-green) !important;
+  color: #fff !important;
+  border-color: var(--brand-green) !important;
+}
+
+/* Make tab list wrap nicely on small screens */
+.tabs { gap: .5rem; flex-wrap: wrap; }
+
+/* Mobile breakpoint: full-width buttons, bigger tap targets */
+@media (max-width: 720px) {
+  .tabs { gap: .4rem; }
+  .tabs li { width: calc(50% - .2rem); }       /* two per row */
+  .tabs button[role="tab"] { width: 100%; padding:.6rem .9rem; }
+}
+
+@media (max-width: 480px) {
+  .tabs li { width: 100%; }                     /* one per row */
+}
+
+/* Slightly stronger calendar/map card shadow on mobile */
+@media (max-width: 720px) {
+  #calendar, #map, .route-panel, table { box-shadow: 0 8px 20px rgba(0,0,0,.04); }
+}
+
   </style>
 </head>
 <body>
