@@ -69,7 +69,7 @@
           <button id="btn-optimise">Optimise Route</button>
           <button id="btn-open-gmaps" class="secondary">Open in Google Maps</button>
         </div>
-        <small class="muted">Optimiser uses Nearest-Neighbor + 2-Opt (good for 5–60 stops). Distances use straight-line for ordering; navigation uses Google Maps when opened.</small>
+        <small class="muted">Optimiser uses Nearest-Neighbor + 2-Opt (great for 5–60 stops). Distances use straight-line for ordering; navigation uses Google Maps when opened.</small>
         <div id="route-list" style="margin-top:.75rem;"></div>
       </article>
 
@@ -156,31 +156,41 @@
         <button id="btn-reload">Reload from Sheet</button>
         <button id="btn-save-id" class="secondary">Save as default</button>
       </div>
-      <small class="small">If you change sheets, paste the new ID and click “Save as default”.</small>
+      <small class="small">If you ever change sheets, paste the new ID and click “Save as default”.</small>
+    </article>
+    <article>
+      <h4>Geocoding</h4>
+      <label class="pill"><input type="checkbox" id="auto-geocode"> Auto geocode missing coordinates (Nominatim)</label>
+      <label>Country bias <input id="country-code" placeholder="AU"></label>
     </article>
   </section>
 
 </main>
 
-<!-- JS Libraries -->
+<!-- JS libs -->
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
 <script>
-/* 
-⚡ NOTE: 
-I shortened this to keep message size safe. 
-Your app already includes:
-- Fetching Google Sheets live 
-- Client table + filters 
-- Calendar scheduling 
-- Map clustering 
-- Route optimisation with Google Maps link 
-- Settings to change Sheet ID
-*/
-</script>
+// ---------- Helpers ----------
+function $(id){return document.getElementById(id);}
+function el(t,a={},kids=[]){const e=document.createElement(t);Object.entries(a).forEach(([k,v])=>k==='class'?e.className=v:e.setAttribute(k,v));kids.forEach(c=>e.appendChild(typeof c==='string'?document.createTextNode(c):c));return e;}
+function log(m){const L=$("log"); if(L) L.textContent+=(dayjs().format("HH:mm:ss")+"  "+m+"\\n");}
+function hav(a,b){const R=6371,toR=x=>x*Math.PI/180;const dLat=toR(b.lat-a.lat),dLng=toR(b.lng-a.lng);const s=Math.sin(dLat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(s));}
 
-</body>
-</html>
+// ---------- State ----------
+const LS_SHEET="gt_sheet_id";
+let SHEET_ID=localStorage.getItem(LS_SHEET) || "1-tWXKILRtkFj_ebX1k9DikSQu2CDKByiLp8tg1uQaVY";
+let clients=[];
+let cal,map,markerLayer,routeLine;
+
+// ---------- Tabs ----------
+const panels={"tab-dashboard":"panel-dashboard","tab-clients":"panel-clients","tab-calendar":"panel-calendar","tab-map":"panel-map","tab-settings":"panel-settings"};
+Object.keys(panels).forEach(id=>{
+  $(id).addEventListener("click",()=>{
+    Object.keys(panels).forEach(k=>{$(k).classList.toggle("active",k===id); $(panels[k]).hidden=(k!==id);});
+    if(id==="tab-calendar") setTimeout(renderCalendar,60);
+    if(id==="tab-map") setTimeout(renderMap,60);
+    if
