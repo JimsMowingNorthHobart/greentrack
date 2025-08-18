@@ -1,408 +1,328 @@
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>GreenTrack Scheduler</title>
-  <meta name="theme-color" content="#16794b"/>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
-  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GreenTrack Scheduler – Drag & Drop</title>
   <style>
-    .tabs button[role="tab"] { color:#111 !important; background:#fff !important; }
-    /* Force tab buttons to be black text */
-.tabs button[role="tab"] {
-  color: #000 !important;
-  background: #fff !important; /* keep white background */
-  font-weight: 600;            /* make text stand out */
-}
-
-/* Optional: highlight active tab with darker border */
-.tabs button.active {
-  border-color: #000 !important;
-  color: #000 !important;
-}
-
-
-    body { background:#f7faf9; }
-    header { margin-bottom:.5rem; }
-    .tabs { display:flex; gap:.5rem; flex-wrap:wrap; list-style:none; padding:0; }
-    .tabs button[role="tab"] { border:1px solid #e6e8ef; background:#fff; padding:.45rem .8rem; border-radius:8px; }
-    .active { outline:2px solid #1f7a1f33; }
-    #calendar { max-width:1100px; margin:0 auto; background:#fff; padding:8px; border-radius:12px; border:1px solid #e6e8ef; }
-    #map { height:75vh; border-radius:12px; border:1px solid #e6e8ef; }
-    table { background:#fff; border-radius:12px; }
-    .small { font-size:.9rem; color:#667085; }
-    .right { text-align:right; }
-    .pill { border:1px solid #e6e8ef; border-radius:10px; padding:.35rem .6rem; background:#fff; }
-    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-    .badge { background:#eaf6ea; color:#1f7a1f; padding:.2rem .5rem; border-radius:999px; font-weight:700; font-size:.8rem; }
-    .route-panel { background:#fff; border:1px solid #e6e8ef; border-radius:12px; padding:12px; }
-    .nowrap { white-space:nowrap; }
-    .muted { color:#8a94a6; }
-
-    /* === Brand colors & tabs (overrides) === */
-:root {
-  --brand-green: #16794b;
-  --brand-green-weak: #e3f2ea;
-}
-
-/* Force tab labels to be black by default */
-.tabs button[role="tab"] {
-  color: #000 !important;
-  background: #fff !important;
-  font-weight: 600;
-  border: 1px solid #d6d9e0 !important;
-  transition: background .15s ease, color .15s ease, border-color .15s ease, transform .05s ease;
-}
-
-/* Hover/press feedback */
-.tabs button[role="tab"]:hover { transform: translateY(-1px); }
-.tabs button[role="tab"]:active { transform: translateY(0); }
-
-/* Active tab: green background, white text, bold border */
-.tabs button[role="tab"].active {
-  background: var(--brand-green) !important;
-  color: #fff !important;
-  border-color: var(--brand-green) !important;
-}
-
-/* Make tab list wrap nicely on small screens */
-.tabs { gap: .5rem; flex-wrap: wrap; }
-
-/* Mobile breakpoint: full-width buttons, bigger tap targets */
-@media (max-width: 720px) {
-  .tabs { gap: .4rem; }
-  .tabs li { width: calc(50% - .2rem); }       /* two per row */
-  .tabs button[role="tab"] { width: 100%; padding:.6rem .9rem; }
-}
-
-@media (max-width: 480px) {
-  .tabs li { width: 100%; }                     /* one per row */
-}
-
-/* Slightly stronger calendar/map card shadow on mobile */
-@media (max-width: 720px) {
-  #calendar, #map, .route-panel, table { box-shadow: 0 8px 20px rgba(0,0,0,.04); }
-}
-
+    :root{--green:#2a9d8f;--deep:#264653;--bg:#f4f6f8;--card:#fff}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#222}
+    nav{background:var(--green);color:#fff;padding:12px 16px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+    nav a{color:#fff;text-decoration:none;font-weight:700}
+    nav a:hover{text-decoration:underline}
+    .container{padding:18px;max-width:1200px;margin:0 auto}
+    h1{color:var(--deep);margin:0 0 8px}
+    .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+    .card{background:var(--card);border-radius:10px;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    label{font-weight:600}
+    input,button{padding:10px 12px;border:1px solid #d0d7de;border-radius:8px}
+    input{width:100%}
+    button{background:var(--green);color:#fff;border:none;cursor:pointer}
+    button.ghost{background:#e9f6f4;color:#0b5349;border:1px solid #cde7e3}
+    button:hover{filter:brightness(.98)}
+    .status{font-size:14px;color:#555}
+    .pill{display:inline-block;padding:6px 10px;border-radius:20px;background:#eef6ff;color:#0b3d91;font-size:12px;font-weight:600}
+    .day{min-height:130px;display:flex;flex-direction:column;gap:8px}
+    .day-header{display:flex;justify-content:space-between;align-items:center;color:#415a77;font-weight:700}
+    .job{padding:8px;border:1px solid #e6e8eb;border-radius:8px;background:#fff;cursor:grab}
+    .job.dragging{opacity:.6}
+    .drop-ok{outline:2px dashed var(--green)}
+    .muted{opacity:.65}
+    .flex{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-<header class="container">
   <nav>
-    <ul><li style="display:flex;align-items:center;gap:.6rem;">   <img src="logo.png" alt="Jim's Mowing" style="height:32px;width:auto;border-radius:6px;object-fit:contain;">   <strong>GreenTrack • Jim’s Mowing</strong> </li></ul>
-    <ul class="tabs">
-      <li><button role="tab" id="tab-dashboard" class="active">Dashboard</button></li>
-      <li><button role="tab" id="tab-clients">Clients</button></li>
-      <li><button role="tab" id="tab-calendar">Calendar</button></li>
-      <li><button role="tab" id="tab-map">Map</button></li>
-      <li><button role="tab" id="tab-settings">Settings</button></li>
-    </ul>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#clients">Clients</a>
+    <a href="#calendar">Calendar</a>
+    <a href="#map">Map</a>
+    <a href="#settings">Settings</a>
   </nav>
-</header>
-
-<main class="container">
-  <!-- Dashboard -->
-  <section id="panel-dashboard">
-    <div class="grid2">
-      <article class="route-panel">
-        <h4>Route Optimisation</h4>
-        <div class="grid2">
-          <label>Vehicle/Employee <input id="route-filter" placeholder="e.g., Ute-1 or John"></label>
-          <label>Date <input id="route-date" type="date"></label>
+  <div class="container">
+    <section id="calendar" class="card">
+      <div class="flex" style="justify-content:space-between">
+        <h1>Calendar (Drag jobs onto a date)</h1>
+        <div class="flex">
+          <button class="ghost" id="prevBtn">◀ Previous</button>
+          <span class="pill" id="rangeLabel">Loading…</span>
+          <button class="ghost" id="nextBtn">Next ▶</button>
         </div>
-        <div class="grid2">
-          <label class="pill"><input type="checkbox" id="route-limit-day" checked> Only jobs on selected date</label>
-          <label class="pill"><input type="checkbox" id="route-start-first"> Keep first stop fixed</label>
-        </div>
-        <div class="grid2">
-          <button id="btn-optimise">Optimise Route</button>
-          <button id="btn-open-gmaps" class="secondary">Open in Google Maps</button>
-        </div>
-        <small class="muted">Uses Nearest-Neighbor + 2-Opt (straight-line for ordering). Google Maps handles live navigation.</small>
-        <div id="route-list" style="margin-top:.75rem;"></div>
-      </article>
-
-      <article>
-        <h4>Live Sheet Status</h4>
-        <p class="small">Source: Google Sheet <code id="sheet-badge"></code></p>
-        <div class="grid2">
-          <div><strong>Total clients</strong><p><span id="stat-total" class="badge">0</span></p></div>
-          <div><strong>With coordinates</strong><p><span id="stat-geo" class="badge">0</span></p></div>
-        </div>
-        <details><summary>Last fetch log</summary>
-          <pre id="log" style="max-height:40vh; overflow:auto; background:#0b1021; color:#d2e0ff; padding:8px; border-radius:8px;"></pre>
-        </details>
-      </article>
-    </div>
-  </section>
-
-  <!-- Clients -->
-  <section id="panel-clients" hidden>
-    <h3>Clients <span class="badge" id="client-count">0</span></h3>
-    <div class="grid2">
-      <input id="filter" placeholder="Search by name, suburb, vehicle, employee, frequency…">
-      <div class="right"><button id="btn-backup" class="secondary">Backup (JSON)</button></div>
-    </div>
-    <div style="overflow:auto; max-height:65vh; margin-top:.5rem;">
-      <table id="client-table">
-        <thead>
-          <tr>
-            <th>Name</th><th>Address</th><th>Phone</th><th>Email</th>
-            <th>Frequency</th><th>Vehicle</th><th>Employee</th>
-            <th>Start Date</th><th>Notes</th><th class="nowrap">Lat</th><th class="nowrap">Lng</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- Calendar -->
-  <section id="panel-calendar" hidden>
-    <div class="grid2">
-      <h3>Calendar</h3>
-      <div class="right">
-        <label class="pill"><input type="checkbox" id="toggle-assign" checked> Show employee/vehicle</label>
-        <label>View <select id="cal-view">
-          <option value="dayGridMonth">Month</option>
-          <option value="timeGridWeek">Week</option>
-          <option value="listWeek">List (Week)</option>
-        </select></label>
       </div>
-    </div>
-    <div id="calendar"></div>
-  </section>
+      <div id="calendarGrid" class="grid" aria-live="polite"></div>
+    </section>
 
-  <!-- Map -->
-  <section id="panel-map" hidden>
-    <div class="grid2">
-      <h3>Map</h3>
-      <div class="right"><label class="pill"><input type="checkbox" id="use-clusters" checked> Cluster pins</label></div>
-    </div>
-    <div id="map"></div>
-  </section>
-
-  <!-- Settings -->
-  <section id="panel-settings" hidden>
-    <h3>Settings</h3>
-    <article>
-      <h4>Sheet</h4>
-      <label>Google Sheet ID
-        <input id="sheet-id" value="1-tWXKILRtkFj_ebX1k9DikSQu2CDKByiLp8tg1uQaVY" placeholder="Paste your sheet id">
-      </label>
-      <div class="grid2">
-        <button id="btn-reload">Reload from Sheet</button>
-        <button id="btn-save-id" class="secondary">Save as default</button>
+    <section id="settings" class="card">
+      <h1>Settings</h1>
+      <div class="two">
+        <div>
+          <label for="sheetId">Google Sheet ID</label>
+          <input id="sheetId" placeholder="e.g. 1-tWXKILRtkFj_..." />
+        </div>
+        <div>
+          <label for="scriptUrl">Write-back URL (Apps Script Web App)</label>
+          <input id="scriptUrl" placeholder="https://script.google.com/.../exec" />
+        </div>
       </div>
-      <small class="small">If you change sheets, paste the new ID and click “Save as default”.</small>
-    </article>
-  </section>
-</main>
+      <div class="row">
+        <button id="saveBtn">Save</button>
+        <button id="reloadBtn" class="ghost">Reload from Sheet</button>
+        <span class="status" id="status">Not connected</span>
+      </div>
+      <p class="muted">Tip: To enable write-back (when you drop a job on a new date), deploy the Apps Script Web App below and paste its URL here.</p>
+    </section>
 
-<!-- JS libs -->
-<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <section class="card">
+      <h1>Enable Write-Back (Optional)</h1>
+      <p>1) In your Google Sheet → <b>Extensions → Apps Script</b> → paste this code → <b>Deploy → New deployment → Web app</b> → Who has access: <b>Anyone</b>. Copy the Web App URL and paste it into <b>Settings → Write-back URL</b>.</p>
+<pre><code>// ==== Google Apps Script (Web App) ====
+// File &gt; Project Settings: Set Time zone to your region
+// Deploy with access: Anyone
 
-<script>
-// ---------- Helpers ----------
-function $(id){return document.getElementById(id);}
-function el(t,a={},kids=[]){const e=document.createElement(t);Object.entries(a).forEach(([k,v])=>k==='class'?e.className=v:e.setAttribute(k,v));kids.forEach(c=>e.appendChild(typeof c==='string'?document.createTextNode(c):c));return e;}
-function log(m){const L=$("log"); if(L) L.textContent+=(dayjs().format("HH:mm:ss")+"  "+m+"\\n");}
-function hav(a,b){const R=6371,toR=x=>x*Math.PI/180;const dLat=toR(b.lat-a.lat),dLng=toR(b.lng-a.lng);const s=Math.sin(dLat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(s));}
-
-// ---------- State ----------
-const LS_SHEET="gt_sheet_id";
-let SHEET_ID=localStorage.getItem(LS_SHEET) || "1-tWXKILRtkFj_ebX1k9DikSQu2CDKByiLp8tg1uQaVY";
-let clients=[]; let cal,map,markerLayer,routeLine;
-
-// ---------- Tabs ----------
-const panels={"tab-dashboard":"panel-dashboard","tab-clients":"panel-clients","tab-calendar":"panel-calendar","tab-map":"panel-map","tab-settings":"panel-settings"};
-Object.keys(panels).forEach(id=>{
-  $(id).addEventListener("click",()=>{
-    Object.keys(panels).forEach(k=>{$(k).classList.toggle("active",k===id); $(panels[k]).hidden=(k!==id);});
-    if(id==="tab-calendar") setTimeout(renderCalendar,60);
-    if(id==="tab-map") setTimeout(renderMap,60);
-    if(id==="tab-clients") renderClientTable();
-  });
-});
-
-// ---------- Google Sheet fetch ----------
-async function fetchSheet(sheetId=SHEET_ID){
-  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
-  log("Fetching sheet…");
-  const res=await fetch(url);
-  const txt=await res.text();
-  const jsonStr=txt.substring(txt.indexOf('{'), txt.lastIndexOf('}')+1);
-  const data=JSON.parse(jsonStr);
-  const cols=data.table.cols.map(c=>c.label||c.id);
-  const rows=data.table.rows.map(r=>{
-    const o={}; cols.forEach((h,i)=>o[h]=r.c[i]? (r.c[i].v ?? r.c[i].f ?? "") : ""); return o;
-  });
-  log(`Loaded ${rows.length} rows.`); return {cols,rows};
-}
-function normalize(row){
-  const map={name:["name","client","customer"],address:["address","addr","street"],phone:["phone","mobile","contact"],email:["email","mail"],frequency:["frequency","freq"],vehicle:["vehicle","car","ute","van"],employee:["employee","staff","worker","team"],start:["start","start date","start_date"],notes:["notes","job notes","description"],lat:["lat","latitude"],lng:["lng","lon","long","longitude"]};
-  const get=(keys)=>{for(const k of keys){for(const key in row){if(key && key.toString().toLowerCase().trim()===k) return row[key];}} return "";}
-  return {name:get(map.name),address:get(map.address),phone:get(map.phone),email:get(map.email),frequency:normFreq(get(map.frequency)),vehicle:get(map.vehicle),employee:get(map.employee),start:iso(get(map.start))||dayjs().format("YYYY-MM-DD"),notes:get(map.notes),lat:parseFloat(get(map.lat))||null,lng:parseFloat(get(map.lng))||null};
-}
-function normFreq(v){ if(!v) return "2w"; v=(""+v).toLowerCase(); if(v.includes("1"))return"1w"; if(v.includes("3"))return"3w"; if(v.includes("4"))return"4w"; if(v.includes("2"))return"2w"; if(v.includes("week"))return"1w"; if(v.includes("month"))return"4w"; return v; }
-function iso(s){ if(!s) return ""; const d=dayjs(s); return d.isValid()? d.format("YYYY-MM-DD"):""; }
-
-// ---------- Load & render ----------
-async function loadClients(){
+function doPost(e){
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type'
+  };
   try{
-    const {rows}=await fetchSheet();
-    clients=rows.map(normalize).filter(c=>c.name||c.address);
-    $("sheet-badge").textContent = SHEET_ID;
-    $("stat-total").textContent=clients.length;
-    $("stat-geo").textContent=clients.filter(c=>c.lat&&c.lng).length;
-    $("client-count").textContent=clients.length;
-    renderClientTable();
-    if(cal){cal.removeAllEvents(); cal.addEventSource(genEvents());}
-    if(map) renderMap();
-    log("Clients ready.");
-  }catch(e){
-    log("Error: "+e.message);
-    alert("Could not load Google Sheet. Ensure sharing is 'Anyone with the link can view'.");
+    const body = JSON.parse(e.postData.contents||'{}');
+    const {sheetId, sheetName='Calendar', jobId, rowIndex, newDate} = body;
+    if(!sheetId || !newDate) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'Missing sheetId/newDate'})).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+    const ss = SpreadsheetApp.openById(sheetId);
+    const sh = ss.getSheetByName(sheetName);
+    if(!sh) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'No sheet named '+sheetName})).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+
+    // Find columns
+    const lastCol = sh.getLastColumn();
+    const headersRow = sh.getRange(1,1,1,lastCol).getValues()[0].map(String);
+    const dateCol = headersRow.findIndex(h=>h.trim().toLowerCase()==='date')+1;
+    const idCol = headersRow.findIndex(h=>h.trim().toLowerCase()==='job id')+1; // optional
+    if(dateCol===0) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'"Date" column not found'})).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+
+    let targetRow = 0;
+    if(idCol && jobId){
+      const rng = sh.getRange(2,idCol,sh.getLastRow()-1,1).getValues();
+      for(let i=0;i<rng.length;i++){ if(String(rng[i][0])===String(jobId)){ targetRow = i+2; break; } }
+    }
+    if(!targetRow && rowIndex){ targetRow = rowIndex; }
+    if(!targetRow) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'Row not found (need Job ID or rowIndex)'})).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+
+    // Write new ISO date
+    const d = new Date(newDate);
+    if(isNaN(d)) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'Invalid date'})).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+    sh.getRange(targetRow, dateCol).setValue(Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd'));
+
+    return ContentService.createTextOutput(JSON.stringify({ok:true,row:targetRow})).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+  }catch(err){
+    return ContentService.createTextOutput(JSON.stringify({ok:false,error:String(err)})).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
   }
 }
 
-// ---------- Clients table ----------
-function renderClientTable(){
-  const tb=document.querySelector("#client-table tbody"); tb.innerHTML="";
-  const filter=($("filter").value||"").toLowerCase();
-  clients.filter(c=>JSON.stringify(c).toLowerCase().includes(filter)).forEach(c=>{
-    tb.appendChild(el("tr",{},[
-      el("td",{},[c.name||""]), el("td",{},[c.address||""]), el("td",{},[c.phone||""]), el("td",{},[c.email||""]),
-      el("td",{},[c.frequency||""]), el("td",{},[c.vehicle||""]), el("td",{},[c.employee||""]), el("td",{},[c.start||""]),
-      el("td",{},[c.notes||""]), el("td",{},[c.lat??""]), el("td",{},[c.lng??""])
-    ]));
+function doOptions(){
+  return ContentService.createTextOutput('').setMimeType(ContentService.MimeType.TEXT).setHeaders({
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type'
   });
 }
-$("filter").addEventListener("input", renderClientTable);
-$("btn-backup").addEventListener("click", ()=>{ const blob=new Blob([JSON.stringify({clients},null,2)],{type:"application/json"}); const a=el("a",{download:"greentrack_backup.json"}); a.href=URL.createObjectURL(blob); a.click(); });
+</code></pre>
+      <p>2) (Optional but recommended) Add a <b>Job ID</b> column to your <b>Calendar</b> tab. The app will use that for precise updates. If missing, it will fall back to row number.</p>
+    </section>
+  </div>
 
-// ---------- Calendar ----------
-function genEvents(){
-  const showAssign=$("toggle-assign")?.checked;
-  const events=[]; const startWindow=dayjs().startOf('month').subtract(1,'month'); const endWindow=dayjs().endOf('month').add(2,'month');
-  clients.forEach((c,i)=>{ const freq=c.frequency||"2w"; const start=dayjs(c.start||dayjs().format("YYYY-MM-DD")); if(!start.isValid()) return;
-    let step=2; if(freq.startsWith("1w")) step=1; else if(freq.startsWith("3w")) step=3; else if(freq.startsWith("4w")) step=4;
-    let d=start.startOf('day'); while(d.isBefore(endWindow)){ if(d.isAfter(startWindow)){ events.push({id:`${i}-${d.format("YYYYMMDD")}`, title:c.name+(showAssign?` · ${c.employee||c.vehicle||""}`:""), start:d.format("YYYY-MM-DD"), extendedProps:{idx:i}});}
-      d=d.add(step,'week'); }
-  }); return events;
-}
-function renderCalendar(){
-  const target=$("calendar"); if(!target) return;
-  if(!cal){
-    cal=new FullCalendar.Calendar(target,{ initialView:$("cal-view").value, height:"auto", editable:false,
-      headerToolbar:{left:"prev,next today",center:"title",right:"dayGridMonth,timeGridWeek,listWeek"},
-      events:genEvents(),
-      eventClick:(info)=>{ const idx=info.event.extendedProps.idx; const c=clients[idx]; if(!c) return; alert(`${c.name}\n${c.address||""}\n${c.phone||""}`); }
-    }); cal.render();
-  }else{ cal.changeView($("cal-view").value); cal.removeAllEvents(); cal.addEventSource(genEvents()); }
-}
-$("cal-view").addEventListener("change", renderCalendar);
-$("toggle-assign").addEventListener("change", renderCalendar);
+  <script>
+    // ---- Utilities ----
+    const qs = (s,el=document)=>el.querySelector(s);
+    const qsa = (s,el=document)=>[...el.querySelectorAll(s)];
+    const fmtISO = (d)=> new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString().slice(0,10);
 
-// ---------- Map ----------
-function renderMap(){
-  const div=$("map"); if(!div) return;
-  if(!map){ map=L.map("map").setView([-37.8136,144.9631],11); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map); }
-  if(markerLayer) markerLayer.remove();
-  const useClusters=$("use-clusters").checked;
-  markerLayer=useClusters? L.markerClusterGroup() : L.layerGroup();
-  let bounds=[];
-  clients.forEach(c=>{ if(c.lat&&c.lng){ const m=L.marker([c.lat,c.lng]).bindPopup(`<strong>${c.name}</strong><br>${c.address||""}<br>${c.vehicle||""} ${c.employee? " · "+c.employee:""}`); markerLayer.addLayer(m); bounds.push([c.lat,c.lng]); }});
-  markerLayer.addTo(map); if(bounds.length) map.fitBounds(bounds,{padding:[20,20]});
-}
-$("use-clusters").addEventListener("change", renderMap);
+    // ---- State ----
+    let state = {
+      startDate: new Date(), // first day shown
+      days: 28,
+      sheetId: localStorage.getItem('sheetId')||'',
+      scriptUrl: localStorage.getItem('scriptUrl')||'',
+      calendar: [], // jobs
+      headers: [],
+    };
 
-// ---------- Route Optimisation ----------
-function todaysStops(dateStr, filterText, limitDay=true){
-  const date=dayjs(dateStr), occ=[];
-  clients.forEach(c=>{
-    const start=dayjs(c.start||dayjs().format("YYYY-MM-DD")); if(!start.isValid()) return;
-    let step=14; const f=c.frequency||"2w"; if(f.startsWith("1w")) step=7; else if(f.startsWith("3w")) step=21; else if(f.startsWith("4w")) step=28;
-    if(!c.lat||!c.lng) return;
-    if(filterText){ const t=(c.vehicle+" "+c.employee).toLowerCase(); if(!t.includes(filterText.toLowerCase())) return; }
-    if(limitDay){ const diff=date.diff(start,'day'); if(diff>=0 && diff%step===0) occ.push(c); }
-    else { const diff=Math.abs(date.diff(start,'day')); if(diff%step===0 || (diff%step)<7) occ.push(c); }
-  }); return occ;
-}
-function nearestNeighbor(pts,startIndex=0){
-  const n=pts.length; if(n<=2) return [...Array(n).keys()];
-  const used=new Array(n).fill(false); let route=[startIndex]; used[startIndex]=true; let curr=startIndex;
-  for(let k=1;k<n;k++){ let best=-1,bd=1e18; for(let i=0;i<n;i++) if(!used[i]){ const d=hav(pts[curr],pts[i]); if(d<bd){bd=d; best=i;} } route.push(best); used[best]=true; curr=best; }
-  return route;
-}
-function twoOpt(route, pts){
-  function dist(a,b){return hav(pts[a],pts[b]);}
-  let improved=true, L=route.length;
-  while(improved){ improved=false;
-    for(let i=1;i<L-2;i++){ for(let k=i+1;k<L-1;k++){
-      const a=route[i-1], b=route[i], c=route[k], d=route[k+1];
-      const delta=(dist(a,b)+dist(c,d))-(dist(a,c)+dist(b,d));
-      if(delta>1e-6){ const rev=route.slice(i,k+1).reverse(); route.splice(i,k+1-i,...rev); improved=true; }
-    }} }
-  return route;
-}
-function optimiseRoute(dateStr, filterText, keepStart){
-  const stops=todaysStops(dateStr, filterText, $("route-limit-day").checked);
-  if(!stops.length) return {order:[],stops:[]};
-  const pts=stops.map(s=>({lat:s.lat,lng:s.lng}));
-  let routeIdx=nearestNeighbor(pts,0); routeIdx=twoOpt(routeIdx,pts);
-  if(keepStart && routeIdx[0]!==0){ const i=routeIdx.indexOf(0); routeIdx=routeIdx.slice(i).concat(routeIdx.slice(0,i)); }
-  const ordered=routeIdx.map(i=>stops[i]); return {order:ordered, stops};
-}
-$("btn-optimise").addEventListener("click", ()=>{
-  const date=$("route-date").value || dayjs().format("YYYY-MM-DD");
-  const filt=$("route-filter").value.trim();
-  const res=optimiseRoute(date,filt,$("route-start-first").checked);
-  const box=$("route-list"); box.innerHTML="";
-  if(!res.order.length){ box.textContent="No stops found for that filter/date."; if(routeLine&&map){map.removeLayer(routeLine); routeLine=null;} return; }
-  const ol=el("ol"); res.order.forEach(c=>ol.appendChild(el("li",{},[`${c.name} — ${c.address}`]))); box.appendChild(ol);
-  if(map){ const latlngs=res.order.map(c=>[c.lat,c.lng]); if(routeLine) map.removeLayer(routeLine); routeLine=L.polyline(latlngs,{weight:4}).addTo(map); map.fitBounds(routeLine.getBounds(),{padding:[20,20]}); }
-});
-$("btn-open-gmaps").addEventListener("click", ()=>{
-  const date=$("route-date").value || dayjs().format("YYYY-MM-DD");
-  const filt=$("route-filter").value.trim();
-  const res=optimiseRoute(date,filt,$("route-start-first").checked);
-  if(!res.order.length) return alert("No stops to open.");
-  const parts=res.order.map(c=>encodeURIComponent(`${c.lat},${c.lng}`));
-  const origin=parts.shift(); const dest=parts.pop() || origin; const waypoints=parts.length? "&waypoints="+parts.join("|") : "";
-  const url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${waypoints}`; window.open(url,"_blank");
-});
+    // ---- Settings wiring ----
+    function applySettingsUI(){
+      qs('#sheetId').value = state.sheetId;
+      qs('#scriptUrl').value = state.scriptUrl;
+      updateStatus();
+    }
+    function updateStatus(msg){
+      qs('#status').textContent = msg || (state.sheetId?`Sheet linked: ${state.sheetId.slice(0,8)}…`:'Not connected');
+    }
 
-// ---------- Settings ----------
-$("sheet-id").addEventListener("input", e=>SHEET_ID=e.target.value.trim());
-$("btn-save-id").addEventListener("click", ()=>{ localStorage.setItem(LS_SHEET,SHEET_ID); alert("Saved."); });
-$("btn-reload").addEventListener("click", loadClients);
+    qs('#saveBtn').addEventListener('click',()=>{
+      state.sheetId = qs('#sheetId').value.trim();
+      state.scriptUrl = qs('#scriptUrl').value.trim();
+      localStorage.setItem('sheetId', state.sheetId);
+      localStorage.setItem('scriptUrl', state.scriptUrl);
+      updateStatus('Saved ✓');
+    });
+    qs('#reloadBtn').addEventListener('click',()=>loadFromSheet());
+    qs('#prevBtn').addEventListener('click',()=>{ state.startDate.setDate(state.startDate.getDate()-28); renderCalendar(); placeJobs(); });
+    qs('#nextBtn').addEventListener('click',()=>{ state.startDate.setDate(state.startDate.getDate()+28); renderCalendar(); placeJobs(); });
 
-// ---------- Init ----------
-document.addEventListener("DOMContentLoaded", ()=>{
-  $("route-date").value = dayjs().format("YYYY-MM-DD");
-  $("sheet-badge").textContent = SHEET_ID;
-  $("sheet-id").value = SHEET_ID;
-  $("tab-dashboard").click();
-  loadClients();
-});
-</script>
+    // ---- Fetch from Google Sheets (GViz JSON) ----
+    async function fetchSheetJSON(sheetName){
+      if(!state.sheetId) throw new Error('No Sheet ID saved');
+      const url = `https://docs.google.com/spreadsheets/d/${state.sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+      const res = await fetch(url, {cache:'no-store'});
+      const text = await res.text();
+      const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}')+1));
+      const cols = json.table.cols.map(c=>c.label);
+      const rows = json.table.rows.map(r=>r.c? r.c.map(c=>c?c.v:''): []);
+      return {cols, rows};
+    }
 
-<footer class="container" style="margin-top:16px;opacity:.7;font-size:.9rem;">
-  Build: baseline1
-</footer>
-  <footer class="container" style="margin:20px auto;opacity:.7;font-size:.9rem;text-align:center">
-  Build: <strong>2025-08-17-v2</strong>
-</footer>
+    function rowsToObjects(cols, rows){
+      return rows.map(r=>{
+        const o={};
+        cols.forEach((c,i)=>{ o[c]=r[i]===undefined? '': r[i]; });
+        return o;
+      });
+    }
 
+    async function loadFromSheet(){
+      try{
+        updateStatus('Loading…');
+        const cal = await fetchSheetJSON('Calendar');
+        state.headers = cal.cols;
+        const objs = rowsToObjects(cal.cols, cal.rows);
+        // Normalize keys
+        const keys = keyIndex(cal.cols);
+        state.calendar = objs.map((o, idx)=>({
+          rowIndex: idx+2, // 1-based sheet rows; +1 header
+          jobId: o['Job ID']||'',
+          date: toISO(o['Date']),
+          client: o['Client']||'',
+          service: o['Service']||'',
+          employee: o['Employee']||'',
+          vehicle: o['Vehicle']||'',
+          notes: o['Notes']||''
+        }));
+        renderCalendar();
+        placeJobs();
+        updateStatus(`Loaded ${state.calendar.length} jobs ✓`);
+      }catch(err){
+        console.error(err);
+        updateStatus('Error loading sheet. Check sharing and Sheet ID.');
+      }
+    }
+
+    function keyIndex(cols){
+      const map={};
+      cols.forEach((c,i)=> map[c.toLowerCase()]=i );
+      return map;
+    }
+
+    function toISO(v){
+      if(!v) return '';
+      if(typeof v === 'number'){ // GViz sometimes gives serial date
+        const base = new Date(Date.UTC(1899,11,30));
+        const d = new Date(base.getTime() + v*86400000);
+        return fmtISO(d);
+      }
+      const d = new Date(v);
+      return isNaN(d)? '': fmtISO(d);
+    }
+
+    // ---- Calendar render ----
+    function renderCalendar(){
+      const grid = qs('#calendarGrid');
+      grid.innerHTML = '';
+      const start = new Date(state.startDate.getFullYear(), state.startDate.getMonth(), state.startDate.getDate());
+      const end = new Date(start); end.setDate(start.getDate()+state.days-1);
+      qs('#rangeLabel').textContent = `${fmtISO(start)} → ${fmtISO(end)}`;
+
+      for(let i=0;i<state.days;i++){
+        const d = new Date(start); d.setDate(start.getDate()+i);
+        const day = document.createElement('div');
+        day.className='card day';
+        day.dataset.date = fmtISO(d);
+        day.innerHTML = `<div class="day-header"><span>${d.toLocaleDateString(undefined,{weekday:'short'})}</span><span>${fmtISO(d)}</span></div><div class="slot"></div>`;
+        makeDroppable(day);
+        grid.appendChild(day);
+      }
+    }
+
+    function placeJobs(){
+      // Clear existing
+      qsa('.slot').forEach(el=>el.innerHTML='');
+      for(const job of state.calendar){
+        if(!job.date) continue;
+        const day = qsa(`.day[data-date="${job.date}"]`)[0];
+        if(!day) continue;
+        const card = document.createElement('div');
+        card.className='job';
+        card.draggable = true;
+        card.dataset.jobId = job.jobId||'';
+        card.dataset.rowIndex = job.rowIndex;
+        card.dataset.date = job.date;
+        card.innerHTML = `<b>${job.client}</b><br><small>${job.service||'Service'}</small>`;
+        makeDraggable(card);
+        day.querySelector('.slot').appendChild(card);
+      }
+    }
+
+    // ---- Drag & Drop ----
+    function makeDraggable(el){
+      el.addEventListener('dragstart', ev=>{
+        el.classList.add('dragging');
+        ev.dataTransfer.setData('text/plain', JSON.stringify({jobId: el.dataset.jobId, rowIndex: Number(el.dataset.rowIndex)}));
+      });
+      el.addEventListener('dragend', ()=> el.classList.remove('dragging'));
+    }
+
+    function makeDroppable(dayEl){
+      dayEl.addEventListener('dragover', ev=>{ ev.preventDefault(); dayEl.classList.add('drop-ok'); });
+      dayEl.addEventListener('dragleave', ()=> dayEl.classList.remove('drop-ok'));
+      dayEl.addEventListener('drop', async ev=>{
+        ev.preventDefault(); dayEl.classList.remove('drop-ok');
+        const payload = JSON.parse(ev.dataTransfer.getData('text/plain'));
+        const newDate = dayEl.dataset.date;
+        await handleDropUpdate(payload, newDate);
+      });
+    }
+
+    async function handleDropUpdate({jobId,rowIndex}, newDate){
+      // Update UI immediately
+      const dragged = document.querySelector(`.job[data-row-index="${rowIndex}"]`) || document.querySelector(`.job[data-job-id="${CSS.escape(jobId||'')}"]`);
+      if(dragged){ dragged.dataset.date = newDate; }
+
+      // Try write-back if script URL provided
+      if(state.scriptUrl){
+        try{
+          updateStatus('Updating…');
+          const res = await fetch(state.scriptUrl, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sheetId: state.sheetId, sheetName:'Calendar', jobId, rowIndex, newDate})});
+          const j = await res.json();
+          if(j.ok){ updateStatus(`Updated ✓ Row ${j.row}`); }
+          else { updateStatus('Write failed: '+j.error); }
+        }catch(err){ updateStatus('Write failed (network/CORS)'); }
+      } else {
+        updateStatus('Moved locally. To save to Sheet, add Write-back URL in Settings.');
+      }
+
+      // Refresh view from sheet after write (optional):
+      // await loadFromSheet();
+      placeJobs();
+    }
+
+    // ---- Init ----
+    (async function init(){
+      applySettingsUI();
+      renderCalendar();
+      if(state.sheetId){ await loadFromSheet(); }
+    })();
+  </script>
 </body>
 </html>
